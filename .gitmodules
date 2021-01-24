@@ -1,3 +1,6 @@
 [submodule "seqan"]
 	path = seqan
 	url = https://github.com/seqan/seqan
+[submodule "include/htslib"]
+	path = include/htslib
+	url = https://github.com/samtools/htslib

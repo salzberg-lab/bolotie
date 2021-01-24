@@ -15,6 +15,51 @@ public:
     explicit Variants() = default;
     ~Variants() = default;
 
+    void load_vcf_mask(const std::string& vcf_fname,const std::string& ref_seqid){ // given a vcf file, load all SNPs to be used later as a mask when building a consensus sequence
+        // http://wresch.github.io/2014/11/18/process-vcf-file-with-htslib.html - thank you for many useful pointers on processing vcf with htslib
+        htsFile * vcf_fp = bcf_open(vcf_fname.c_str(), "r");
+        if (vcf_fp == NULL)
+        {
+            std::cerr<<"Can't open provided VCF file"<<std::endl;
+            exit(2);
+        }
+        bcf_hdr_t *hdr = bcf_hdr_read(vcf_fp);
+
+        const char **seqnames = NULL;
+        int nseq = 0;
+        seqnames = bcf_hdr_seqnames(hdr, &nseq);
+        if (seqnames == NULL)
+        {
+            std::cerr<<"VCF appears empty"<<std::endl;
+            exit(2);
+        }
+
+        bcf1_t *rec = bcf_init();
+        if (rec == NULL)
+        {
+            std::cerr<<"couldn't initiate a record device"<<std::endl;
+            exit(2);
+        }
+
+        this->mask.resize(29903,false);
+        while (bcf_read(vcf_fp, hdr, rec) == 0)
+        {
+            if (bcf_is_snp(rec)) {
+                if(this->mask.size()<=rec->pos)
+                {
+                    this->mask.resize(this->mask.size()+10000,false);
+                }
+                this->mask[rec->pos]=true;
+            }
+        }
+        free(seqnames);
+        bcf_hdr_destroy(hdr);
+        bcf_close(vcf_fp);
+        bcf_destroy(rec);
+
+        this->mask_used = true;
+    }
+
     void add_var(const std::string& ref_seqid, const int pos, const uint8_t q, const uint8_t t)
     {
         this->ri_it = this->ref2id.insert(std::make_pair(ref_seqid,max_ref_id));
@@ -84,7 +129,15 @@ public:
             {
                 // first check if the variant itself passes
                 this->vit.first = this->vars.find(var);
-                if(this->vit.first->second >= min_var_count) // variant passes frequency threshold
+                if(this->mask_used && this->mask[std::get<0>(var)]) // if position is masked - replace with N in consensus
+                {
+                    ps_it = pos_set.find(std::get<0>(var));
+                    if (ps_it != pos_set.end()) // position passes frequency threshold
+                    {
+                        cur_passing_vars.emplace_back(std::get<0>(var), 'N', std::get<2>(var));
+                    }
+                }
+                else if(this->vit.first->second >= min_var_count) // variant passes frequency threshold
                 {
                     a2r_it = amb2ref_pos_set.find(std::get<0>(var));
                     if (a2r_it != amb2ref_pos_set.end()) // should be replaced with the reference allele
@@ -213,6 +266,10 @@ private:
     std::pair<std::map<int,std::array<int,5> >::iterator,bool> pv_it;
 
     int max_ref_id = 0;
+
+	bool mask_used = false;
+    std::vector<bool> mask; // mask loaded from VCF/BCF
+
 };
 
 int bolotie_cons(int argc, char **argv){
@@ -224,7 +281,8 @@ int bolotie_cons(int argc, char **argv){
                     MINVARNUM   = 'm',
                     KEEPINDEL   = 'k',
                     NOAMB       = 'n',
-                    AMB2REF     = 'r'};
+                    AMB2REF     = 'r',
+					MASK        = 'v'};
 
     ArgParse args_cons("cons");
 
@@ -237,6 +295,7 @@ int bolotie_cons(int argc, char **argv){
     args_cons.add_flag(Opt_CONS::KEEPINDEL, "keepindel", "keep insertions and deletions", false);
     args_cons.add_flag(Opt_CONS::NOAMB, "noamb", "replaces all ambiguous characters with reference alleles", false);
     args_cons.add_int(Opt_CONS::AMB2REF, "amb2ref", 0, "if at most in this many sequences variants are present at a position where an ambiguous base is observed, then the reference allele is written", false);
+	args_cons.add_string(Opt_CONS::MASK,"mask","","VCF/BCF file listing variants to be masked (hidden) in the consensus sequence.",false);
 
     args_cons.parse_args(argc, argv);
 
@@ -270,6 +329,13 @@ int bolotie_cons(int argc, char **argv){
 
     // load variants
     Variants vars;
+
+	// if available - load masking data
+    if(args_cons.is_set(Opt_CONS::MASK))
+	{
+        std::cerr<<"loading masking variant set"<<std::endl;
+        vars.load_vcf_mask(args_cons.get_string(Opt_CONS::MASK),ref_seqid);
+    }
 
     std::ifstream var_source;
     var_source.open(args_cons.get_string(Opt_CONS::VARIANTS));

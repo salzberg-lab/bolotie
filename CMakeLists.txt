@@ -34,6 +34,19 @@ message(STATUS "klib binary dir: ${klib_BINARY_DIR}")
 
 include_directories(${klib_SOURCE_DIR})
 
+# HTSLIB
+include_directories("${CMAKE_SOURCE_DIR}/include/")
+link_directories("${CMAKE_SOURCE_DIR}/include/htslib")
+
+include(ExternalProject)
+ExternalProject_Add(htslib
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/include/htslib/
+        BUILD_IN_SOURCE 1
+        CONFIGURE_COMMAND autoheader COMMAND autoconf COMMAND ./configure --without-libdeflate --disable-libcurl
+        BUILD_COMMAND ${MAKE}
+        INSTALL_COMMAND ""
+        )
+
 add_executable(bolotie
                src/bolotie.cpp
                src/arg_parse.hpp
@@ -43,5 +56,6 @@ add_executable(bolotie
                ${klib_SOURCE_DIR}/ksw2_extz.c
                ${klib_SOURCE_DIR}/ksw2_gg2_sse.c
                ${klib_SOURCE_DIR}/ksw2_gg.c)
+add_dependencies(bolotie htslib)
 target_link_libraries (bolotie ${SEQAN_LIBRARIES})
-target_link_libraries (bolotie pthread)
+target_link_libraries (bolotie pthread -lhts -lz -llzma -lbz2)
