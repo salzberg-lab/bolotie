@@ -37,13 +37,13 @@ In this case you need to clone the submodule separately  (``git submodule update
 **Requirements**
 
 Operating System
-  GNU/Linux, Mac
+  GNU/Linux
 
 Architecture
   Intel/AMD platforms that support ``POPCNT``
 
 Compiler
-  GCC ≥ 4.9, LLVM/Clang ≥ 3.8
+  GCC ≥ 4.9, Clang ≥ 3.8
 
 Build system
   CMake ≥ 3.0
