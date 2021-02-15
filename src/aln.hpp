@@ -531,6 +531,7 @@ int bolotie_aln(int argc, char **argv)
                     #pragma omp parallel for num_threads(params.num_threads)
                     for (int i = 0; i < seqs.size(); i++)
                     {
+                        std::cout<<alns[seqs[i].first].ref_name<<std::endl;
                         run(alns[seqs[i].first], ref_seq, seqs[i].second,params);
                     }
                     seqs.clear();
