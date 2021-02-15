@@ -102,9 +102,9 @@ public:
                 {
                     this->pv_it.first = this->pos2var.find(std::get<0>(var));
                     int max_acgt_vars = std::max({this->pv_it.first->second[0],
-                                                  this->pv_it.first->second[1],
-                                                  this->pv_it.first->second[2],
-                                                  this->pv_it.first->second[3]});
+                                                     this->pv_it.first->second[1],
+                                                     this->pv_it.first->second[2],
+                                                     this->pv_it.first->second[3]});
                     if (max_acgt_vars < amb2ref_count) // if there are no high-frequency non-ambiguous variants at this position
                     {
                         amb2ref_pos_set.insert(std::get<0>(var));
@@ -268,22 +268,22 @@ private:
 
     int max_ref_id = 0;
 
-    bool mask_used = false;
+	bool mask_used = false;
     std::vector<bool> mask; // mask loaded from VCF/BCF
 
 };
 
 int bolotie_cons(int argc, char **argv){
     enum Opt_CONS { REFERENCE   = 'x',
-        VARIANTS    = 'i',
-        OUTPUT      = 'o',
-        NUM_THREADS = 't',
-        DEDUP       = 'd',
-        MINVARNUM   = 'm',
-        KEEPINDEL   = 'k',
-        NOAMB       = 'n',
-        AMB2REF     = 'r',
-        MASK        = 'v'};
+                    VARIANTS    = 'i',
+                    OUTPUT      = 'o',
+                    NUM_THREADS = 't',
+                    DEDUP       = 'd',
+                    MINVARNUM   = 'm',
+                    KEEPINDEL   = 'k',
+                    NOAMB       = 'n',
+                    AMB2REF     = 'r',
+					MASK        = 'v'};
 
     ArgParse args_cons("cons");
 
@@ -296,7 +296,7 @@ int bolotie_cons(int argc, char **argv){
     args_cons.add_flag(Opt_CONS::KEEPINDEL, "keepindel", "keep insertions and deletions", false);
     args_cons.add_flag(Opt_CONS::NOAMB, "noamb", "replaces all ambiguous characters with reference alleles", false);
     args_cons.add_int(Opt_CONS::AMB2REF, "amb2ref", 0, "if at most in this many sequences variants are present at a position where an ambiguous base is observed, then the reference allele is written", false);
-    args_cons.add_string(Opt_CONS::MASK,"mask","","VCF/BCF file listing variants to be masked (hidden) in the consensus sequence.",false);
+	args_cons.add_string(Opt_CONS::MASK,"mask","","VCF/BCF file listing variants to be masked (hidden) in the consensus sequence.",false);
 
     args_cons.parse_args(argc, argv);
 
@@ -331,9 +331,9 @@ int bolotie_cons(int argc, char **argv){
     // load variants
     Variants vars;
 
-    // if available - load masking data
+	// if available - load masking data
     if(args_cons.is_set(Opt_CONS::MASK))
-    {
+	{
         std::cerr<<"loading masking variant set"<<std::endl;
         vars.load_vcf_mask(args_cons.get_string(Opt_CONS::MASK),ref_seqid);
     }

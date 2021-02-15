@@ -1,3 +1,5 @@
+# awk -F',' -f .parents_beautify.awk data/gisaid_hcov-19_2020_09_02_16.fasta parents.clean_table.csv > output
+
 function print_name_in_cols(str) {
     # country = substr(str, 1, index(str, "_") - 1) # cut off after first _
     country = countries[gisaid[1]]
