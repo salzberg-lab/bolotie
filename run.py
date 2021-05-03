@@ -615,7 +615,11 @@ def plot(args, figure_dir):
 
         plt.suptitle(refname, fontsize=40)
 
-        plt.savefig(figure_dir + refname + ".png")
+        if args.vector:
+            plt.savefig(figure_dir + refname + ".svg")
+        else:
+            plt.savefig(figure_dir + refname + ".png")
+
         plt.clf()
         plt.close('all')
 
@@ -743,6 +747,10 @@ def main(args):
                         required=False,
                         default=1.0,
                         help="percent of non-ACGT characters allowed for sequences to be analyzed")
+    parser.add_argument("--vector",
+                        required=False,
+                        action="store_true",
+                        help="If enabled - all plots will be saved in SVG format. PNG images are stored by default")
 
     parser.set_defaults(func=wrapper)
     args = parser.parse_args()
