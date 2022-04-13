@@ -27,7 +27,8 @@ If you want to build it from source, we recommend cloning the git repository as 
 
 ::
 
-    $ git clone --recursive https://github.com/salzberg-lab/bolotie.git --recursive
+    $ git clone https://github.com/salzberg-lab/bolotie.git --recursive
+    $ cd bolotie
     $ cmake -DCMAKE_BUILD_TYPE=Release .
     $ make -j4
 
