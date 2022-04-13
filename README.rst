@@ -15,7 +15,7 @@ Introduction
 Bolotie is a new algorithm designed to conduct mutational analysis and to detect recombinant forms and other anomalies among a very large set of viral sequences.
 methods implemented in Bolotie are designed such that novel sequences can also be analyzed efficiently without the need to rerun the entire protocol.
 
-Ales Varabyou, Christopher Pockrandt, Steven L. Salzberg, Mihaela Pertea. **Rapid detection of inter-clade recombination in SARS-CoV-2 with Bolotie**. `BioRxiv`_, 2020.
+Varabyou, A., Pockrandt, C., Salzberg, S. L., & Pertea, M. (2021). **Rapid detection of inter-clade recombination in SARS-CoV-2 with Bolotie**. `Genetics, 218(3)`, iyab074.
 
 Installation
 ^^^^^^^^^^^^
