@@ -1,0 +1,1 @@
+./run.py --input ./example_hiv/seqs.fa --reference ./example_hiv/ref.fa --outdir ./res_hiv --keep_tmp --freq-threshold 3 --trim-len 100 --clusters ./example_hiv/seqs.clus
