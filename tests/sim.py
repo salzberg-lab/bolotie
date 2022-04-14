@@ -52,13 +52,13 @@ def mutate_write(outfp, cid, sid, seq, mut_rate):
 
 
 def run(args):
-    out_dir = args.out_dir
+    out_dir = args.outdir.rstrip("/")+"/"
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    run_dir = args.run_dir
+    run_dir = args.run_dir.rstrip("/")+"/"
     ref_fname = args.reference
 
-    num_genomes_per_clade = args.num_genome_per_clade
+    num_genomes_per_clade = args.num_genomes_per_clade
     mut_rate = args.mut_rate
     min_allele_freq = args.min_allele_freq  # 10 percent minimum frequency of an allele
 
