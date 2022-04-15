@@ -160,6 +160,7 @@ def get_stages(args):
 
 def load_vars(vars_fname, clu_fname):
     vars_df = pd.read_csv(vars_fname, names=["seqid", "type", "pos", "query", "ref"])
+    vars_df["seqid"] = vars_df["seqid"].astype(str)
     vars_df["pos"] = vars_df["pos"].astype(int)
     vars_df = vars_df[vars_df["type"] == "S"].reset_index(drop=True)
     vars_df["query"] = vars_df["query"].str.upper()
