@@ -348,17 +348,32 @@ def clean(args):
 
     if args.clusters is not None:
         out_clusters = od + "query.clus"
+        clu_map_fname = od + "clu.map.tsv"
+
+        clu_map_fp = open(clu_map_fname,"w+") # clusters are expected to be integers with consecutive values starting with 0
+        clus = dict()
+        max_new_clu = 0
+
         with open(out_clusters, "w+") as outFP:
             with open(args.clusters, "r") as inFP:
                 for line in inFP.readlines():
                     line = line.replace("/", "_").replace("|", "_").replace(" ", "_").replace(",","_")
                     seqid = line.strip().split("\t")[0]
                     cluid = line.strip().split("\t")[-1].split(".")[0]
+
+                    clus.setdefault(cluid,max_new_clu)
+                    new_clu = clus[cluid]
+                    if new_clu == max_new_clu:
+                        clu_map_fp.write(cluid+"\t"+str(new_clu)+"\n")
+                        max_new_clu+=1
+
                     if seqid in included_seqids:
                         assert seqid not in excluded_seqids,"included and excluded"
-                        outFP.write(seqid+"\t"+cluid+"\n")
+                        outFP.write(seqid+"\t"+str(new_clu)+"\n")
                     else:
                         assert seqid in excluded_seqids,"not included and not excluded: "+str(seqid)
+
+            clu_map_fp.close()
 
     sys.stderr.write("Done\n")
     return
