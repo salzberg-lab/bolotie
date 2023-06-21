@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 #include "common.hpp"
 #include "arg_parse.hpp"
 
-int trivialLog(const int clusters, const float p_stay, const float p_switch,
-               std::vector<float>& probs, const std::string& id, std::stringstream& ss)
+int trivialLog(const int clusters, const long double p_stay, const long double p_switch,
+               std::vector<long double>& probs, const std::string& id, std::stringstream& ss)
 {
     const int length = probs.size() / clusters;
 
@@ -19,7 +20,7 @@ int trivialLog(const int clusters, const float p_stay, const float p_switch,
 
     // the first half stores the best probabilities/paths for ending in each cluster,
     // the second half is used as temporary values.
-    std::vector<float> best_probs(2 * clusters);
+    std::vector<long double> best_probs(2 * clusters);
     std::vector<std::vector<uint8_t> > best_paths(2 * clusters);
 
     for (int c = 0; c < clusters; ++c)
@@ -35,9 +36,9 @@ int trivialLog(const int clusters, const float p_stay, const float p_switch,
         {
             for (int c_start = 0; c_start < clusters; ++c_start)
             {
-                const float new_tmp = best_probs[c_start]
-                                      + (c_start == c_to ? p_stay : p_switch)
-                                      + probs[l * clusters + c_to];
+                const long double new_tmp = int(best_probs[c_start])
+                                      + int(c_start == c_to ? p_stay : p_switch)
+                                      + int(probs[l * clusters + c_to]);
 
                 if (c_start == 0 || new_tmp > best_probs[clusters + c_to])
                 {
@@ -128,7 +129,7 @@ int bolotie_find(int argc, char **argv)
     }
 
     // load the index
-    std::vector<std::vector<std::vector<float> > > prob_table; // 1D - length of the genome; 2D - number of clusters; 3D - possible base values
+    std::vector<std::vector<std::vector<long double> > > prob_table; // 1D - length of the genome; 2D - number of clusters; 3D - possible base values
     const std::string index_fname = args_find.get_string(Opt_FIND::INDEX);
     std::ifstream     index_source;
     index_source.open(index_fname, std::ios_base::in);
@@ -142,14 +143,14 @@ int bolotie_find(int argc, char **argv)
     while (std::getline(index_source, index_line))
     {
         std::istringstream line_ss(index_line);
-        prob_table.push_back(std::vector<std::vector<float> >{});
+        prob_table.push_back(std::vector<std::vector<long double> >{});
         while (std::getline(line_ss, nt_vals, '\t'))
         {
             std::istringstream nt_ss(nt_vals);
-            prob_table.back().push_back(std::vector<float>{});
+            prob_table.back().push_back(std::vector<long double>{});
             while (std::getline(nt_ss, clu_val, ','))
             {
-                prob_table.back().back().push_back(std::stof(clu_val));
+                prob_table.back().back().push_back(std::stold(clu_val));
             }
         }
     }
@@ -158,8 +159,8 @@ int bolotie_find(int argc, char **argv)
     int clusters = prob_table[0][0].size();
 
     const std::string fasta_fname    = args_find.get_string(Opt_FIND::INPUT);
-    double            p_stay         = args_find.get_double(Opt_FIND::PROB);
-    double            p_switch       = 1 - p_stay;
+    long double            p_stay         = args_find.get_double(Opt_FIND::PROB);
+    long double            p_switch       = 1 - p_stay;
     const int         threads        = args_find.get_int(Opt_FIND::THREADS);
     const bool        recomb_only    = args_find.get_flag(Opt_FIND::RECOMB);
 
@@ -180,7 +181,7 @@ int bolotie_find(int argc, char **argv)
     // probabilities of all clusters are stored in one vector.
     // the first `clusters` values are the first probabilities of each cluster.
     std::vector<std::string>         ids;
-    std::vector<std::vector<float> > probs;
+    std::vector<std::vector<long double> > probs;
 
     probs.resize(1000); // compute this many sequences in parallel
     ids.reserve(probs.size());
@@ -258,7 +259,7 @@ int bolotie_find(int argc, char **argv)
                 {
                     for (int c = 0; c < clusters; c++)
                     {
-                        probs[seq_id].push_back(1.0f / clusters); // cur_seq_len+i is position of nt for multi-line fasta (i - pos within line)
+                        probs[seq_id].push_back(double(1.0) / clusters); // cur_seq_len+i is position of nt for multi-line fasta (i - pos within line)
                     }
                 }
                 else
