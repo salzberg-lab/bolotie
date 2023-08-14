@@ -8,8 +8,8 @@
 #include "common.hpp"
 #include "arg_parse.hpp"
 
-int trivialLog(const int clusters, const long double p_stay, const long double p_switch,
-               std::vector<long double>& probs, const std::string& id, std::stringstream& ss)
+int trivialLog(const int clusters, const double p_stay, const double p_switch,
+               std::vector<double>& probs, const std::string& id, std::stringstream& ss)
 {
     const int length = probs.size() / clusters;
 
@@ -20,7 +20,7 @@ int trivialLog(const int clusters, const long double p_stay, const long double p
 
     // the first half stores the best probabilities/paths for ending in each cluster,
     // the second half is used as temporary values.
-    std::vector<long double> best_probs(2 * clusters);
+    std::vector<double> best_probs(2 * clusters);
     std::vector<std::vector<uint8_t> > best_paths(2 * clusters);
 
     for (int c = 0; c < clusters; ++c)
@@ -36,7 +36,7 @@ int trivialLog(const int clusters, const long double p_stay, const long double p
         {
             for (int c_start = 0; c_start < clusters; ++c_start)
             {
-                const long double new_tmp = int(best_probs[c_start])
+                const double new_tmp = int(best_probs[c_start])
                                       + int(c_start == c_to ? p_stay : p_switch)
                                       + int(probs[l * clusters + c_to]);
 
@@ -129,7 +129,7 @@ int bolotie_find(int argc, char **argv)
     }
 
     // load the index
-    std::vector<std::vector<std::vector<long double> > > prob_table; // 1D - length of the genome; 2D - number of clusters; 3D - possible base values
+    std::vector<std::vector<std::vector<double> > > prob_table; // 1D - length of the genome; 2D - number of clusters; 3D - possible base values
     const std::string index_fname = args_find.get_string(Opt_FIND::INDEX);
     std::ifstream     index_source;
     index_source.open(index_fname, std::ios_base::in);
@@ -143,11 +143,11 @@ int bolotie_find(int argc, char **argv)
     while (std::getline(index_source, index_line))
     {
         std::istringstream line_ss(index_line);
-        prob_table.push_back(std::vector<std::vector<long double> >{});
+        prob_table.push_back(std::vector<std::vector<double> >{});
         while (std::getline(line_ss, nt_vals, '\t'))
         {
             std::istringstream nt_ss(nt_vals);
-            prob_table.back().push_back(std::vector<long double>{});
+            prob_table.back().push_back(std::vector<double>{});
             while (std::getline(nt_ss, clu_val, ','))
             {
                 prob_table.back().back().push_back(std::stold(clu_val));
@@ -159,8 +159,8 @@ int bolotie_find(int argc, char **argv)
     int clusters = prob_table[0][0].size();
 
     const std::string fasta_fname    = args_find.get_string(Opt_FIND::INPUT);
-    long double            p_stay         = args_find.get_double(Opt_FIND::PROB);
-    long double            p_switch       = 1 - p_stay;
+    double            p_stay         = args_find.get_double(Opt_FIND::PROB);
+    double            p_switch       = 1 - p_stay;
     const int         threads        = args_find.get_int(Opt_FIND::THREADS);
     const bool        recomb_only    = args_find.get_flag(Opt_FIND::RECOMB);
 
@@ -181,7 +181,7 @@ int bolotie_find(int argc, char **argv)
     // probabilities of all clusters are stored in one vector.
     // the first `clusters` values are the first probabilities of each cluster.
     std::vector<std::string>         ids;
-    std::vector<std::vector<long double> > probs;
+    std::vector<std::vector<double> > probs;
 
     probs.resize(1000); // compute this many sequences in parallel
     ids.reserve(probs.size());
@@ -204,6 +204,21 @@ int bolotie_find(int argc, char **argv)
         out_fp = &file_out_fp;
     }
 
+    // count total number of sequences in the data
+    int total_seq_count = 0;
+    while (getline(fasta_source, fasta_line)) {
+        if (fasta_line[0] == '>') {
+            total_seq_count++;
+        }
+    }
+    // reset to the start of the file
+    fasta_source.clear();
+    fasta_source.seekg(0);
+
+    std::cerr<<"0.0% (0/"<<total_seq_count<<" sequences)\r";
+    fflush(stderr);
+
+    int processed_seq_count = 0; // keeps count of the number of sequences processed thus far
     while (getline(fasta_source, fasta_line))
     {
         if (fasta_line[0] == '>')
@@ -224,6 +239,11 @@ int bolotie_find(int argc, char **argv)
 
                         #pragma omp critical
                         {
+                            processed_seq_count++;
+                            float tmp_perc = ((float)processed_seq_count/(float)total_seq_count)*100;
+//                            float cur_perc = static_cast<float>(static_cast<int>(tmp_perc * 10.)) / 10.;
+                            std::cerr<<std::fixed<<std::setprecision(1)<<tmp_perc<<"% ("<<processed_seq_count<<"/"<<total_seq_count<<" sequences)\r";
+                            fflush(stderr);
                             if (!(recomb_only && num_clusters_in_path == 1))
                             {
                                 out_fp->write(ss.str().c_str(), ss.str().size());

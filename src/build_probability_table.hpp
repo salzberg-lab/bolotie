@@ -83,7 +83,7 @@ int bolotie_build(int argc, char **argv)
     cluster_source.close();
 
     // initialize the structure to hold counts of bases in each cluster
-    std::vector<std::vector<std::vector<long double> > > probs_tmp;    // 1D - length of the genome; 2D - number of clusters; 3D - possible base values
+    std::vector<std::vector<std::vector<double> > > probs_tmp;    // 1D - length of the genome; 2D - number of clusters; 3D - possible base values
     probs_tmp.reserve(29003);
     std::vector<std::vector<std::vector<int> > > base_counts;    // same but only holds raw base counts per cluster
     base_counts.reserve(29003);
@@ -202,10 +202,10 @@ int bolotie_build(int argc, char **argv)
     }
 
     // now to compute conditional probabilities from the counts
-    long double min_prob       = 1.0 / (long double)num_refs; // minimum possible probability value to use instead of 0
+    double min_prob       = 1.0 / (double)num_refs; // minimum possible probability value to use instead of 0
     int total_nt_raw_count = 0;
-    long double cond_prob      = 0;
-    long double prob_nt = 0;
+    double cond_prob      = 0;
+    double prob_nt = 0;
     for (int p = 0; p < probs_tmp.size(); ++p) // for each position on the genome
     {
         // compute total number of sequences with non-ambiguous code at this position
@@ -219,8 +219,8 @@ int bolotie_build(int argc, char **argv)
         }
 
         // compute normalized weight of sequences for each cluster (num_seqs_cluster/total_num_seqs)
-        long double norm_factor = (long double)total_acgt/(long double)clusters.size();
-        std::vector<long double> clu_seq_weight;
+        double norm_factor = (double)total_acgt/(double)clusters.size();
+        std::vector<double> clu_seq_weight;
         for(auto& clu : clu_acgt)
         {
             clu_seq_weight.push_back(norm_factor/float(clu));
@@ -237,7 +237,7 @@ int bolotie_build(int argc, char **argv)
                 prob_nt += base_counts[p][c][nt] * clu_seq_weight[c];
                 total_nt_raw_count += base_counts[p][c][nt];
             }
-            prob_nt = prob_nt == 0 ? 1.0 / (long double)num_refs : prob_nt;
+            prob_nt = prob_nt == 0 ? 1.0 / (double)num_refs : prob_nt;
 
             for (int c = 0; c < clusters.size(); c++)
             {
