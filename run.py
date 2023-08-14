@@ -127,9 +127,9 @@ def timer(start, end):
 
 def get_tmp_id(base_tmp_dir):
     id_val = 0
-    tmp = base_tmp_dir
+    base_tmp_dir
     while True:
-        tmp = tmp + str(id_val)
+        tmp = base_tmp_dir + str(id_val)
         if not os.path.exists(tmp):
             return tmp
         else:
@@ -207,72 +207,69 @@ def plot_recomb(axes, seq, mat, counts, totals, clus_plot, clus_scatter, palette
     base_prob = 1.0 / float(mat.shape[2])
     for i, nt in enumerate(seq):
         for clu in clus_plot:
-            if nt.upper() not in "ACGT":
-                prob = base_prob
-            else:
+            prob = base_prob
+            cur_clu_count = 0
+            if nt.upper() in "ACGT":
                 prob = mat[i][acgt[nt]][clu]
-            if abs(prob - base_prob) >= 0.09:
-                cur_probs[clu].append(prob)
-                cur_xs[clu].append(i)
                 cur_clu_count = int(counts[i][acgt[nt]][clu])
-                cur_counts[clu].append(str(cur_clu_count))
 
-    for rec_clu in clus_plot:
-        axes.plot(probs[rec_clu], linewidth=10, color=palette.get(rec_clu, '#333333'))
+            cur_probs[clu].append(prob)
+            cur_xs[clu].append(i)
+            cur_counts[clu].append(str(cur_clu_count))
 
     base_frac = 1.0 / float(len(clus_scatter))
     markers = ["o", "s", "v", "X", "^", "<", ">", "8", "p", "P", "*", "h", "H", "D", "d"]
-    for i, rec_clu in enumerate(clus_scatter):
-        small_size = (5 * len(clus_scatter)) - (i * 5)
-        large_size = (150 * len(clus_scatter)) - (i * 150)
+    for ri, rec_clu in enumerate(clus_plot):
+        axes.plot(probs[rec_clu], linewidth=10, color=palette.get(ri, '#333333'))
+        small_size = 300 # (5 * len(clus_scatter)) - (ri * 5)
+        large_size = 300 # (150 * len(clus_scatter)) - (ri * 150)
         mark_size = [large_size if x > thresh else small_size for x in list(abs(probs[rec_clu] - base_frac))]
-        axes.scatter(list(probs.index), probs[rec_clu], s=mark_size, marker=markers[i],
-                     color=palette.get(rec_clu, '#333333'), label=str(rec_clu))
+        axes.scatter(list(probs.index), probs[rec_clu], s=mark_size, marker=markers[ri],
+                     color=palette.get(ri, '#333333'), label=str(rec_clu))
 
-        if rec_clu in clus_plot:
-            res = pd.concat([pd.DataFrame(cur_xs[rec_clu]),
-                             pd.DataFrame(cur_probs[rec_clu]),
-                             pd.DataFrame(cur_counts[rec_clu])], axis=1)
-            res.columns = ["xs", "prob", "counts"]
+        res = pd.concat([pd.DataFrame(cur_xs[rec_clu]),
+                         pd.DataFrame(cur_probs[rec_clu]),
+                         pd.DataFrame(cur_counts[rec_clu])], axis=1)
+        res.columns = ["xs", "prob", "counts"]
 
-            idx = 0
-            counts_tmp = []
-            is_tmp = []
-            js_tmp = []
+        idx = 0
+        counts_tmp = []
+        is_tmp = []
+        js_tmp = []
 
-            j = list(res["prob"])[0]
-            i = list(res["xs"])[0]
-            counts_tmp.append(int(list(res["counts"])[0]))
-            is_tmp.append(i)
-            js_tmp.append(j)
-            prev_j = j
-            prev_i = i
+        j = list(res["prob"])[0]
+        i = list(res["xs"])[0]
+        counts_tmp.append(int(list(res["counts"])[0]))
+        is_tmp.append(i)
+        js_tmp.append(j)
+        prev_j = j
+        prev_i = i
+        idx += 1
+
+        for i, j in zip(list(res["xs"])[1:], list(res["prob"])[1:]):  # TODO: "i" is already declared
+            if max([j, prev_j]) - min([j, prev_j]) <= 0.05 and max([i, prev_i]) - min([i, prev_i]) <= 500:
+                counts_tmp.append(int(list(res["counts"])[idx]))
+                is_tmp.append(i)
+                js_tmp.append(j)
+                prev_j = j
+                prev_i = i
+            else:
+                txt = str(int(np.mean(counts_tmp)))
+                if len(counts_tmp) > 1:
+                    txt = txt + "(" + str(len(counts_tmp)) + ")"
+                axes.annotate(txt, xy=(np.mean(is_tmp), np.mean(js_tmp)), fontsize=30, rotation=0)
+
+                counts_tmp = [int(list(res["counts"])[idx])]
+                is_tmp = [i]
+                js_tmp = [j]
+                prev_j = j
+                prev_i = i
             idx += 1
 
-            for i, j in zip(list(res["xs"])[1:], list(res["prob"])[1:]):  # TODO: "i" is already declared
-                if max([j, prev_j]) - min([j, prev_j]) <= 0.05 and max([i, prev_i]) - min([i, prev_i]) <= 500:
-                    counts_tmp.append(int(list(res["counts"])[idx]))
-                    is_tmp.append(i)
-                    js_tmp.append(j)
-                    prev_j = j
-                    prev_i = i
-                else:
-                    txt = str(int(np.mean(counts_tmp)))
-                    if len(counts_tmp) > 1:
-                        txt = txt + "(" + str(len(counts_tmp)) + ")"
-                    axes.annotate(txt, xy=(np.mean(is_tmp), np.mean(js_tmp)), fontsize=30, rotation=0)
-
-                    counts_tmp = [int(list(res["counts"])[idx])]
-                    is_tmp = [i]
-                    js_tmp = [j]
-                    prev_j = j
-                    prev_i = i
-                idx += 1
-
-            txt = str(int(np.mean(counts_tmp)))
-            if len(counts_tmp) > 1:
-                txt = txt + "(" + str(len(counts_tmp)) + ")"
-            axes.annotate(txt, xy=(np.mean(is_tmp), np.mean(js_tmp)), fontsize=30, rotation=0)
+        txt = str(int(np.mean(counts_tmp)))
+        if len(counts_tmp) > 1:
+            txt = txt + "(" + str(len(counts_tmp)) + ")"
+        axes.annotate(txt, xy=(np.mean(is_tmp), np.mean(js_tmp)), fontsize=30, rotation=0)
 
     axes.legend(loc=7)
 
@@ -581,55 +578,17 @@ def plot(args, figure_dir):
     plt.rcParams.update(params)
 
     for refname in paths:
+        print(refname)
         signature, seq = paths[refname]
         lens = [int(x.split(":")[1]) for x in signature.split(";")]
 
         rec_clus = [int(x.split(":")[0]) for x in signature.split(";")]
 
-        fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(40, 8), sharex=True,
-                                 gridspec_kw={'hspace': 0, 'height_ratios': [6, 1, 1, 1]})
-        axes[0].set_ylabel("P(Clade | Base)")
-        plt.setp(axes[1].get_yticklabels(), visible=False)
-        axes[1].tick_params(axis='both', which='both', length=0)
-        plt.setp(axes[2].get_yticklabels(), visible=False)
-        axes[2].tick_params(axis='both', which='both', length=0)
-        plt.setp(axes[3].get_yticklabels(), visible=False)
-        axes[3].tick_params(axis='both', which='both', length=0)
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(40, 8), sharex=True,
+                                 gridspec_kw={'hspace': 0, 'height_ratios': [6]})
+        axes.set_ylabel("P(Clade | Base)")
 
-        axes[1].set_ylabel("Clade " + str(rec_clus[0]), rotation=0, va="center")
-        axes[2].set_ylabel("Recombinant", rotation=0, va="center")
-        axes[3].set_ylabel("Clade " + str(rec_clus[1]), rotation=0, va="center")
-
-        plot_recomb(axes[0], seq, mat, counts, totals, rec_clus, list(range(mat.shape[2])), cold_dark, thresh=0.1)
-
-        # plot recomb variants
-        rec_vars = vars_df[vars_df["seqid"] == refname].sort_values(by="pos")
-        for nt in "ACGT":
-            xs = rec_vars[rec_vars["query"] == nt]["pos"].to_list()
-            heights = [1 for _ in range(len(xs))]
-            axes[2].bar(x=xs, height=heights, width=200, color="black")
-
-        # 1st should be consensus SNPS for the 1st cluster
-        # 2nd should be bases of the 1st parent
-        axes[1].set_facecolor(cold_dark.get(rec_clus[0], '#333333') + str("20"))
-        xs = clu_grp_vars[rec_clus[0]][0]
-        prevs = [0 for _ in range(len(xs))]
-        for nt in "ACGT":
-            cur_vals = clu_grp_vars[rec_clus[0]][1][nt]
-            axes[1].bar(x=xs, height=cur_vals, width=200, bottom=prevs, color="black")
-            for i in range(len(prevs)):
-                prevs[i] += cur_vals[i]
-
-        axes[3].set_facecolor(cold_dark.get(rec_clus[1], '#333333') + str("20"))
-        xs = clu_grp_vars[rec_clus[1]][0]
-        prevs = [0 for _ in range(len(xs))]
-        for nt in "ACGT":
-            cur_vals = clu_grp_vars[rec_clus[1]][1][nt]
-            axes[3].bar(x=xs, height=cur_vals, width=200, bottom=prevs, color="black")
-            for i in range(len(prevs)):
-                prevs[i] += cur_vals[i]
-
-        plt.suptitle(refname, fontsize=40)
+        plot_recomb(axes, seq, mat, counts, totals, rec_clus, list(range(mat.shape[2])), cold_dark, thresh=0.1)
 
         if args.vector:
             plt.savefig(figure_dir + refname + ".svg")
