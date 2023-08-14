@@ -205,17 +205,34 @@ def plot_recomb(axes, seq, mat, counts, totals, clus_plot, clus_scatter, palette
     cur_counts = {key: list() for key in clus_plot}  # fraction of sequences with this variant
     cur_probs = {key: list() for key in clus_plot}  # probabilities for each cluster
     base_prob = 1.0 / float(mat.shape[2])
+    # for i, nt in enumerate(seq):
+    #     for clu in clus_plot:
+    #         prob = base_prob
+    #         cur_clu_count = 0
+    #         if nt.upper() in "ACGT":
+    #             prob = mat[i][acgt[nt]][clu]
+    #             cur_clu_count = int(counts[i][acgt[nt]][clu])
+    #
+    #         if not nt.upper() in "ACGT" and i not in [0,len(seq)-1]: # makes sure at least the first and last are plotted, but everything else ambiguous is skipped
+    #             continue
+    #         cur_probs[clu].append(prob)
+    #         cur_xs[clu].append(i)
+    #         cur_counts[clu].append(str(cur_clu_count))
+
     for i, nt in enumerate(seq):
         for clu in clus_plot:
-            prob = base_prob
-            cur_clu_count = 0
-            if nt.upper() in "ACGT":
+            if nt.upper() not in "ACGT":
+                prob = base_prob
+            else:
                 prob = mat[i][acgt[nt]][clu]
+            if abs(prob - base_prob) >= 0.09 or i in [0,len(seq)-1]:
+                cur_probs[clu].append(prob)
+                cur_xs[clu].append(i)
                 cur_clu_count = int(counts[i][acgt[nt]][clu])
+                cur_counts[clu].append(str(cur_clu_count))
 
-            cur_probs[clu].append(prob)
-            cur_xs[clu].append(i)
-            cur_counts[clu].append(str(cur_clu_count))
+    for rec_clu in clus_plot:
+        axes.plot(probs[rec_clu], linewidth=10, color=palette.get(rec_clu, '#333333'))
 
     base_frac = 1.0 / float(len(clus_scatter))
     markers = ["o", "s", "v", "X", "^", "<", ">", "8", "p", "P", "*", "h", "H", "D", "d"]
